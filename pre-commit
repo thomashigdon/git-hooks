@@ -1,0 +1,13 @@
+#!/bin/sh
+# Block commits that add secrets. Skip once by setting SKIP_GITLEAKS (any value) for the commit.
+if [ -z "$SKIP_GITLEAKS" ]; then
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks git --pre-commit --staged --redact --no-banner -v || {
+      echo "gitleaks: possible secret in staged changes; commit blocked (set SKIP_GITLEAKS to override)" >&2
+      exit 1
+    }
+  else
+    echo "gitleaks: not installed, secret scan skipped" >&2
+  fi
+fi
+exec "$(dirname "$0")/_run-repo-hook" pre-commit "$@"

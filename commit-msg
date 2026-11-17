@@ -1,0 +1,11 @@
+#!/bin/sh
+# Mark commits that passed the pre-commit gitleaks scan; CI flags pushed commits without the trailer.
+# Merge commits are skipped (CI skips them too).
+# Opt a repo out (e.g. a fork whose commits go upstream): git config hooks.scannedByTrailer false
+if [ -z "$SKIP_GITLEAKS" ] && command -v gitleaks >/dev/null 2>&1 \
+   && [ "$(git config --bool hooks.scannedByTrailer)" != false ] \
+   && ! git rev-parse -q --verify MERGE_HEAD >/dev/null \
+   && grep -v '^#' "$1" | grep -q '[^[:space:]]'; then
+  git interpret-trailers --in-place --if-exists doNothing --trailer "Scanned-by: gitleaks" "$1"
+fi
+exec "$(dirname "$0")/_run-repo-hook" commit-msg "$@"
